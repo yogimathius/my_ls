@@ -22,8 +22,10 @@ typedef struct s_listnode_array {
 #endif
 
 void read_list(listnode *list) {
-  while (list->next != NULL) { // changed from list != NULL
-    printf("%s\n", list->val);
+  while (list != NULL) { // changed from list != NULL
+    if (strlen(list->val) > 0) {
+      printf("%s\n", list->val);
+    }
     list = list->next;
   }
 }
