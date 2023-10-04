@@ -13,16 +13,17 @@ typedef struct s_listnode {
 } listnode;
 #endif
 
-#ifndef STRUCT_LISTNODE_ARRAY
-#define STRUCT_LISTNODE_ARRAY
-typedef struct s_listnode_array {
-  int size;
-  listnode **array;
-} listnode_array;
+#ifndef STRUCT_DIRNODE
+#define STRUCT_DIRNODE
+typedef struct s_dirnode {
+  char dir_name[256];
+  struct s_dirnode *next_dir;
+  struct s_listnode *current_file;
+} dirnode;
 #endif
 
 void read_list(listnode *list) {
-  while (list != NULL) { // changed from list != NULL
+  while (list != NULL) {
     if (strlen(list->val) > 0) {
       printf("%s\n", list->val);
     }
@@ -85,41 +86,42 @@ listnode *sort_lists(listnode *list) {
   }
 }
 
-listnode *add_to_list(char *arg, listnode *current_list,
-                      int show_hidden_files) {
-
+dirnode *add_to_list(char *arg, dirnode *current_list, int show_hidden_files) {
   DIR *d;
   struct dirent *dir;
   d = opendir(arg);
+  strncpy(current_list->dir_name, arg, 255);
+  current_list->current_file = (listnode *)malloc(sizeof(listnode));
+  listnode *head_file = current_list->current_file;
+  listnode *current_file = head_file;
 
   if (d) {
     while ((dir = readdir(d)) != NULL) {
       if (show_hidden_files ||
           (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
-        strncpy(current_list->val, dir->d_name, 255);
-        current_list->val[255] = '\0';
-        current_list->next = (listnode *)malloc(sizeof(listnode));
-        // current_list->next->val[0] = '\0'; // Initialize the new node's val
-        // field current_list->next->next = NULL; // Initialize the new node's
-        // next field
-        current_list = current_list->next;
+        strncpy(current_file->val, dir->d_name, 255);
+        current_file->next = (listnode *)malloc(sizeof(listnode));
+        current_file = current_file->next;
+        current_file->val[0] = '\0';
+        current_file->next = NULL;
       }
     }
     closedir(d);
   }
+
+  sort_lists(head_file);
+  read_list(head_file);
+
   return current_list;
 }
 
 int main(int argc, char *argv[]) {
-  int current_dir = 0;
-  int curr_with_files = 0;
-  int lookup_dirs = 0;
   int time_sorted = 0;
   int show_hidden_files = 0;
-  int is_nested = 0;
-  listnode *head;
-  listnode *current;
-  head = (listnode *)malloc(sizeof(listnode));
+  int dir_count = 0;
+  dirnode *head;
+  dirnode *current;
+  head = (dirnode *)malloc(sizeof(dirnode));
   current = head;
   if (argc > 1) {
     int directory_traversed = 0;
@@ -135,6 +137,10 @@ int main(int argc, char *argv[]) {
         time_sorted = 1;
       }
       if (argv[i][0] != '-') {
+        dir_count++;
+        if (dir_count > 1) {
+          current = current->next_dir;
+        }
         current = add_to_list(argv[i], current, show_hidden_files);
         directory_traversed = 1;
       }
@@ -145,7 +151,6 @@ int main(int argc, char *argv[]) {
   } else {
     current = add_to_list(".", current, show_hidden_files);
   }
-  sort_lists(head);
-  read_list(head);
+
   return (0);
 }
