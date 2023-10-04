@@ -86,7 +86,20 @@ listnode *sort_lists(listnode *list) {
   }
 }
 
-dirnode *add_to_list(char *arg, dirnode *current_list, int show_hidden_files) {
+void add_to_list(struct dirent *dir, DIR *d, listnode *current_file,
+                 int show_hidden_files) {
+  while ((dir = readdir(d)) != NULL) {
+    if (show_hidden_files || (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
+      strncpy(current_file->val, dir->d_name, 255);
+      current_file->next = (listnode *)malloc(sizeof(listnode));
+      current_file = current_file->next;
+      current_file->val[0] = '\0';
+      current_file->next = NULL;
+    }
+  }
+}
+
+dirnode *check_list(char *arg, dirnode *current_list, int show_hidden_files) {
   DIR *d;
   struct dirent *dir;
   d = opendir(arg);
@@ -96,16 +109,7 @@ dirnode *add_to_list(char *arg, dirnode *current_list, int show_hidden_files) {
   listnode *current_file = head_file;
 
   if (d) {
-    while ((dir = readdir(d)) != NULL) {
-      if (show_hidden_files ||
-          (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
-        strncpy(current_file->val, dir->d_name, 255);
-        current_file->next = (listnode *)malloc(sizeof(listnode));
-        current_file = current_file->next;
-        current_file->val[0] = '\0';
-        current_file->next = NULL;
-      }
-    }
+    add_to_list(dir, d, current_file, show_hidden_files);
     closedir(d);
   }
 
@@ -141,15 +145,15 @@ int main(int argc, char *argv[]) {
         if (dir_count > 1) {
           current = current->next_dir;
         }
-        current = add_to_list(argv[i], current, show_hidden_files);
+        current = check_list(argv[i], current, show_hidden_files);
         directory_traversed = 1;
       }
     }
     if (show_hidden_files && !directory_traversed) {
-      current = add_to_list(".", current, show_hidden_files);
+      current = check_list(".", current, show_hidden_files);
     }
   } else {
-    current = add_to_list(".", current, show_hidden_files);
+    current = check_list(".", current, show_hidden_files);
   }
 
   return (0);
