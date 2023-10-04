@@ -85,23 +85,29 @@ listnode *sort_lists(listnode *list) {
   }
 }
 
-void add_to_list(char *arg, listnode *current_list) {
-    DIR *d;
-    struct dirent *dir;
-    d = opendir(arg);
+listnode *add_to_list(char *arg, listnode *current_list,
+                      int show_hidden_files) {
 
-    if (d) {
+  DIR *d;
+  struct dirent *dir;
+  d = opendir(arg);
+
+  if (d) {
     while ((dir = readdir(d)) != NULL) {
-      if (dir->d_name[0] != '.' && dir->d_name[0] != ' ') {
-        strncpy(current_list->val, dir->d_name, 255); 
-        current_list->val[255] = '\0';                
+      if (show_hidden_files ||
+          (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
+        strncpy(current_list->val, dir->d_name, 255);
+        current_list->val[255] = '\0';
         current_list->next = (listnode *)malloc(sizeof(listnode));
+        // current_list->next->val[0] = '\0'; // Initialize the new node's val
+        // field current_list->next->next = NULL; // Initialize the new node's
+        // next field
         current_list = current_list->next;
       }
     }
-    current_list = NULL; // terminate the list
     closedir(d);
   }
+  return current_list;
 }
 
 int main(int argc, char *argv[]) {
@@ -110,15 +116,14 @@ int main(int argc, char *argv[]) {
   int lookup_dirs = 0;
   int time_sorted = 0;
   int show_hidden_files = 0;
-
+  int is_nested = 0;
   listnode *head;
   listnode *current;
   head = (listnode *)malloc(sizeof(listnode));
   current = head;
   if (argc > 1) {
+    int directory_traversed = 0;
     for (int i = 1; i < argc; i++) {
-      if (strcmp(argv[i], "-f") == 0) {
-      }
       if (strcmp(argv[i], "-a") == 0) {
         show_hidden_files = 1;
       }
@@ -130,11 +135,15 @@ int main(int argc, char *argv[]) {
         time_sorted = 1;
       }
       if (argv[i][0] != '-') {
-        add_to_list(argv[i], current);
+        current = add_to_list(argv[i], current, show_hidden_files);
+        directory_traversed = 1;
       }
     }
+    if (show_hidden_files && !directory_traversed) {
+      current = add_to_list(".", current, show_hidden_files);
+    }
   } else {
-    add_to_list(".", current);
+    current = add_to_list(".", current, show_hidden_files);
   }
   sort_lists(head);
   read_list(head);
