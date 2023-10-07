@@ -160,11 +160,10 @@ dirnode *check_list(char *dir_to_check, dirnode *curr_dir, int show_hidden,
     add_to_list(dir, d, curr_file, show_hidden);
     closedir(d);
   }
+    sort_files(head_file);
 
   if (sort_time) {
     selection_sort_time(head_file);
-  } else {
-    sort_files(head_file);
   }
   read_files(head_file);
 
