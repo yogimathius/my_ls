@@ -19,7 +19,7 @@ typedef struct s_listnode {
 typedef struct s_dirnode {
   char dir_name[256];
   struct s_dirnode *next_dir;
-  struct s_listnode *current_file;
+  struct s_listnode *curr_file;
 } dirnode;
 #endif
 
@@ -44,15 +44,15 @@ listnode *sort_files(listnode *list) {
       if (strcmp(current->val, next->val) > 0) {
         char temp_val[256];
         strncpy(temp_val, current->val, 255);
-        temp_val[255] = '\0'; // ensure null termination
+        temp_val[255] = '\0';
 
         strncpy(current->val, next->val, 255);
-        current->val[255] = '\0'; // ensure null termination
+        current->val[255] = '\0';
 
         strncpy(next->val, temp_val, 255);
-        next->val[255] = '\0'; // ensure null termination
+        next->val[255] = '\0';
 
-        swapped = 1; // a swap was made
+        swapped = 1;
       }
       current = current->next;
       next = current->next;
@@ -109,15 +109,15 @@ dirnode *sort_dirs(dirnode *list) {
       if (strcmp(current->dir_name, next->dir_name) > 0) {
         char temp_val[256];
         strncpy(temp_val, current->dir_name, 255);
-        temp_val[255] = '\0'; // ensure null termination
+        temp_val[255] = '\0';
 
         strncpy(current->dir_name, next->dir_name, 255);
-        current->dir_name[255] = '\0'; // ensure null termination
+        current->dir_name[255] = '\0';
 
         strncpy(next->dir_name, temp_val, 255);
-        next->dir_name[255] = '\0'; // ensure null termination
+        next->dir_name[255] = '\0';
 
-        swapped = 1; // a swap was made
+        swapped = 1;
       }
       current = current->next_dir;
       next = current->next_dir;
@@ -127,53 +127,53 @@ dirnode *sort_dirs(dirnode *list) {
   return list;
 }
 
-void add_to_list(struct dirent *dir, DIR *d, listnode *current_file,
-                 int show_hidden_files) {
+void add_to_list(struct dirent *dir, DIR *d, listnode *curr_file,
+                 int show_hidden) {
   while ((dir = readdir(d)) != NULL) {
-    if (show_hidden_files || (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
+    if (show_hidden || (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
       struct stat file_stats_one;
       int dir_stats = stat(dir->d_name, &file_stats_one);
       time_t iter_time = file_stats_one.st_mtime;
 
-      strncpy(current_file->val, dir->d_name, 255);
-      current_file->st_mtim = iter_time;
+      strncpy(curr_file->val, dir->d_name, 255);
+      curr_file->st_mtim = iter_time;
 
-      current_file->next = (listnode *)malloc(sizeof(listnode));
-      current_file = current_file->next;
-      current_file->val[0] = '\0';
-      current_file->next = NULL;
+      curr_file->next = (listnode *)malloc(sizeof(listnode));
+      curr_file = curr_file->next;
+      curr_file->val[0] = '\0';
+      curr_file->next = NULL;
     }
   }
 }
 
-dirnode *check_list(char *directory_to_check, dirnode *current_list,
-                    int show_hidden_files, int time_sorted) {
+dirnode *check_list(char *dir_to_check, dirnode *curr_dir, int show_hidden,
+                    int sort_time) {
   DIR *d;
   struct dirent *dir;
-  d = opendir(directory_to_check);
-  strncpy(current_list->dir_name, directory_to_check, 255);
-  current_list->current_file = (listnode *)malloc(sizeof(listnode));
-  listnode *head_file = current_list->current_file;
-  listnode *current_file = head_file;
+  d = opendir(dir_to_check);
+  strncpy(curr_dir->dir_name, dir_to_check, 255);
+  curr_dir->curr_file = (listnode *)malloc(sizeof(listnode));
+  listnode *head_file = curr_dir->curr_file;
+  listnode *curr_file = head_file;
 
   if (d) {
-    add_to_list(dir, d, current_file, show_hidden_files);
+    add_to_list(dir, d, curr_file, show_hidden);
     closedir(d);
   }
 
-  if (time_sorted) {
+  if (sort_time) {
     selection_sort_time(head_file);
   } else {
     sort_files(head_file);
   }
   read_files(head_file);
 
-  return current_list;
+  return curr_dir;
 }
 
 int main(int argc, char *argv[]) {
-  int time_sorted = 0;
-  int show_hidden_files = 0;
+  int sort_time = 0;
+  int show_hidden = 0;
   int dir_count = 0;
   dirnode *head;
   dirnode *current;
@@ -185,14 +185,14 @@ int main(int argc, char *argv[]) {
     int directory_traversed = 0;
     for (int i = 1; i < argc; i++) {
       if (strcmp(argv[i], "-a") == 0) {
-        show_hidden_files = 1;
+        show_hidden = 1;
       }
       if (strcmp(argv[i], "-t") == 0) {
-        time_sorted = 1;
+        sort_time = 1;
       }
       if (strcmp(argv[i], "-ta") == 0) {
-        show_hidden_files = 1;
-        time_sorted = 1;
+        show_hidden = 1;
+        sort_time = 1;
       }
       if (argv[i][0] != '-') {
         dir_count++;
@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
       curr++;
       printf("%s:\n", head->dir_name);
     }
-    check_list(head->dir_name, head, show_hidden_files, time_sorted);
+    check_list(head->dir_name, head, show_hidden, sort_time);
     head = head->next_dir;
   }
 
@@ -233,13 +233,3 @@ int main(int argc, char *argv[]) {
 
 // Can you run ./my_ls -t -a and it prints the content of the marvel directory
 // (sorted by time sec + nsec + alphanum ) + hidden files?
-
-/*
-my_ls
-test_files
-config.toml
-archive.tgz
-my_ls.c
-README.md
-compress.tar
-*/
