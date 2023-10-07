@@ -9,7 +9,7 @@
 #define STRUCT_LISTNODE
 typedef struct s_listnode {
   char val[256];
-  time_t mtime;
+  time_t st_mtim;
   struct s_listnode *next;
 } listnode;
 #endif
@@ -32,60 +32,35 @@ void read_files(listnode *list) {
   }
 }
 
-int is_sorted(listnode *param) {
-  listnode *temp = param;
-  listnode *next_temp = temp->next;
-
-  while (temp->next != NULL) {
-    if (temp == NULL) {
-    }
-
-    if (temp->val[0] > next_temp->val[0]) {
-      return 0;
-    }
-
-    temp = temp->next;
-    if (temp->next == NULL) {
-      return 1;
-    }
-    next_temp = temp->next;
-  }
-  return 1;
-}
-
 listnode *sort_files(listnode *list) {
-  if (is_sorted(list)) {
-    return list;
-  }
+  int swapped;
 
-  listnode *current = list;
-  listnode *next = list->next;
-  int swapped = 0; // flag to check if any swaps were made
+  do {
+    swapped = 0;
+    listnode *current = list;
+    listnode *next = list->next;
 
-  while (current->next != NULL) {
-    if (strcmp(current->val, next->val) > 0) {
-      char temp_val[256];
-      strncpy(temp_val, current->val, 255);
-      temp_val[255] = '\0'; // ensure null termination
+    while (current->next != NULL) {
+      if (strcmp(current->val, next->val) > 0) {
+        char temp_val[256];
+        strncpy(temp_val, current->val, 255);
+        temp_val[255] = '\0'; // ensure null termination
 
-      strncpy(current->val, next->val, 255);
-      current->val[255] = '\0'; // ensure null termination
+        strncpy(current->val, next->val, 255);
+        current->val[255] = '\0'; // ensure null termination
 
-      strncpy(next->val, temp_val, 255);
-      next->val[255] = '\0'; // ensure null termination
+        strncpy(next->val, temp_val, 255);
+        next->val[255] = '\0'; // ensure null termination
 
-      swapped = 1; // a swap was made
+        swapped = 1; // a swap was made
+      }
+      current = current->next;
+      next = current->next;
     }
-    current = current->next;
-    next = current->next;
-  }
-
-  if (swapped) { // only call sort_files again if a swap was made
-    return sort_files(list);
-  } else {
-    return list;
-  }
+  } while (swapped);
+  return list;
 }
+
 int param_one_greater(char *param1, char *param2) {
   return strcmp(param1, param2) < 0;
 }
@@ -230,7 +205,13 @@ void add_to_list(struct dirent *dir, DIR *d, listnode *current_file,
                  int show_hidden_files) {
   while ((dir = readdir(d)) != NULL) {
     if (show_hidden_files || (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
+      struct stat file_stats_one;
+      int dir_stats = stat(dir->d_name, &file_stats_one);
+      time_t iter_time = file_stats_one.st_mtime;
+
       strncpy(current_file->val, dir->d_name, 255);
+      current_file->st_mtim = iter_time;
+
       current_file->next = (listnode *)malloc(sizeof(listnode));
       current_file = current_file->next;
       current_file->val[0] = '\0';
