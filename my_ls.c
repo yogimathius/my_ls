@@ -9,6 +9,7 @@
 #define STRUCT_LISTNODE
 typedef struct s_listnode {
   char val[256];
+  time_t mtime;
   struct s_listnode *next;
 } listnode;
 #endif
@@ -83,6 +84,84 @@ listnode *sort_files(listnode *list) {
     return sort_files(list);
   } else {
     return list;
+  }
+}
+int param_one_greater(char *param1, char *param2) {
+  return strcmp(param1, param2) < 0;
+}
+
+listnode *bubble_sort_time(listnode *list) {
+  int swapped; // flag to check if any swaps were made
+  struct stat file_stats_one;
+  struct stat file_stats_two;
+
+  do {
+    swapped = 0;
+    listnode *current = list;
+    listnode *next = list->next;
+    while (current->next != NULL) {
+      int result_one = stat(current->val, &file_stats_one);
+      int result_two = stat(next->val, &file_stats_two);
+
+      time_t time_one = file_stats_one.st_mtime;
+      time_t time_two = file_stats_two.st_mtime;
+      if (time_one > time_two || (time_one == time_two &&
+                                  param_one_greater(current->val, next->val))) {
+        char temp_val[256];
+        strncpy(temp_val, current->val, 255);
+        temp_val[255] = '\0';
+
+        strncpy(current->val, next->val, 255);
+        current->val[255] = '\0';
+
+        strncpy(next->val, temp_val, 255);
+        next->val[255] = '\0';
+        swapped = 1; // a swap was made
+      }
+      current = current->next;
+      if (current != NULL) {
+        next = current->next;
+      }
+    }
+
+  } while (swapped);
+
+  return list;
+}
+
+void *selection_sort_time(listnode *list) {
+  listnode *current = list;
+  struct stat file_stats_one;
+  struct stat file_stats_two;
+
+  while (current != NULL) {
+    int result_one = stat(current->val, &file_stats_one);
+
+    listnode *min_node = current;
+    time_t min_time = file_stats_one.st_mtime;
+
+    for (listnode *iter = current->next; iter != NULL; iter = iter->next) {
+      int iter_result = stat(iter->val, &file_stats_two);
+
+      time_t iter_time = file_stats_two.st_mtime;
+
+      if (iter_time < min_time ||
+          (min_time == iter_time && strcmp(min_node->val, iter->val) < 0)) {
+        min_node = iter;
+        min_time = iter_time;
+      }
+    }
+    char temp_val[256];
+    strncpy(temp_val, current->val, 255);
+    temp_val[255] = '\0';
+
+    strncpy(current->val, min_node->val, 255);
+    current->val[255] = '\0';
+
+    strncpy(min_node->val, temp_val, 255);
+    min_node->val[255] = '\0';
+
+    current = current->next;
   }
 }
 
@@ -161,7 +240,7 @@ void add_to_list(struct dirent *dir, DIR *d, listnode *current_file,
 }
 
 dirnode *check_list(char *directory_to_check, dirnode *current_list,
-                    int show_hidden_files) {
+                    int show_hidden_files, int time_sorted) {
   DIR *d;
   struct dirent *dir;
   d = opendir(directory_to_check);
@@ -175,7 +254,11 @@ dirnode *check_list(char *directory_to_check, dirnode *current_list,
     closedir(d);
   }
 
-  sort_files(head_file);
+  if (time_sorted) {
+    selection_sort_time(head_file);
+  } else {
+    sort_files(head_file);
+  }
   read_files(head_file);
 
   return current_list;
@@ -228,9 +311,28 @@ int main(int argc, char *argv[]) {
       curr++;
       printf("%s:\n", head->dir_name);
     }
-    check_list(head->dir_name, head, show_hidden_files);
+    check_list(head->dir_name, head, show_hidden_files, time_sorted);
     head = head->next_dir;
   }
 
   return (0);
 }
+
+// Can you run ./my_ls -t and it prints the content of the current directory
+// (sorted by time)?
+
+// Can you run ./my_ls -ta and it prints the content of the marvel directory
+// (sorted by time) + hidden files?
+
+// Can you run ./my_ls -t -a and it prints the content of the marvel directory
+// (sorted by time sec + nsec + alphanum ) + hidden files?
+
+/*
+my_ls
+test_files
+config.toml
+archive.tgz
+my_ls.c
+README.md
+compress.tar
+*/
