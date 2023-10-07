@@ -65,45 +65,6 @@ int param_one_greater(char *param1, char *param2) {
   return strcmp(param1, param2) < 0;
 }
 
-listnode *bubble_sort_time(listnode *list) {
-  int swapped; // flag to check if any swaps were made
-  struct stat file_stats_one;
-  struct stat file_stats_two;
-
-  do {
-    swapped = 0;
-    listnode *current = list;
-    listnode *next = list->next;
-    while (current->next != NULL) {
-      int result_one = stat(current->val, &file_stats_one);
-      int result_two = stat(next->val, &file_stats_two);
-
-      time_t time_one = file_stats_one.st_mtime;
-      time_t time_two = file_stats_two.st_mtime;
-      if (time_one > time_two || (time_one == time_two &&
-                                  param_one_greater(current->val, next->val))) {
-        char temp_val[256];
-        strncpy(temp_val, current->val, 255);
-        temp_val[255] = '\0';
-
-        strncpy(current->val, next->val, 255);
-        current->val[255] = '\0';
-
-        strncpy(next->val, temp_val, 255);
-        next->val[255] = '\0';
-        swapped = 1; // a swap was made
-      }
-      current = current->next;
-      if (current != NULL) {
-        next = current->next;
-      }
-    }
-
-  } while (swapped);
-
-  return list;
-}
-
 void *selection_sort_time(listnode *list) {
   listnode *current = list;
   struct stat file_stats_one;
@@ -146,16 +107,8 @@ int is_sorted_dir(dirnode *param) {
 
   while (temp->next_dir != NULL) {
 
-    if (temp->dir_name[0] > next_temp->dir_name[0]) {
+    if (strcmp(temp->dir_name, next_temp->dir_name) < 0) {
       return 0;
-    }
-
-    for (int i = 0; i < strlen(temp->dir_name); i++) {
-      for (int j = 0; j < strlen(next_temp->dir_name); j++) {
-        if (temp->dir_name[i] > next_temp->dir_name[j]) {
-          return 0;
-        }
-      }
     }
 
     temp = temp->next_dir;
