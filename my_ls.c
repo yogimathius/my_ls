@@ -22,7 +22,7 @@ typedef struct s_dirnode {
 } dirnode;
 #endif
 
-void read_list(listnode *list) {
+void read_files(listnode *list) {
   while (list != NULL) {
     if (strlen(list->val) > 0) {
       printf("%s\n", list->val);
@@ -52,7 +52,7 @@ int is_sorted(listnode *param) {
   return 1;
 }
 
-listnode *sort_lists(listnode *list) {
+listnode *sort_files(listnode *list) {
   if (is_sorted(list)) {
     return list;
   }
@@ -79,8 +79,69 @@ listnode *sort_lists(listnode *list) {
     next = current->next;
   }
 
-  if (swapped) { // only call sort_lists again if a swap was made
-    return sort_lists(list);
+  if (swapped) { // only call sort_files again if a swap was made
+    return sort_files(list);
+  } else {
+    return list;
+  }
+}
+
+int is_sorted_dir(dirnode *param) {
+  dirnode *temp = param;
+  dirnode *next_temp = temp->next_dir;
+
+  while (temp->next_dir != NULL) {
+
+    if (temp->dir_name[0] > next_temp->dir_name[0]) {
+      return 0;
+    }
+
+    for (int i = 0; i < strlen(temp->dir_name); i++) {
+      for (int j = 0; j < strlen(next_temp->dir_name); j++) {
+        if (temp->dir_name[i] > next_temp->dir_name[j]) {
+          return 0;
+        }
+      }
+    }
+
+    temp = temp->next_dir;
+    if (temp->next_dir == NULL) {
+      return 1;
+    }
+    next_temp = temp->next_dir;
+  }
+  return 1;
+}
+
+dirnode *sort_dirs(dirnode *list) {
+  if (is_sorted_dir(list)) {
+    return list;
+  }
+
+  dirnode *current = list;
+  dirnode *next = list->next_dir;
+  int swapped = 0; // flag to check if any swaps were made
+
+  while (current->next_dir != NULL) {
+    if (strcmp(current->dir_name, next->dir_name) > 0) {
+      char temp_val[256];
+      strncpy(temp_val, current->dir_name, 255);
+      temp_val[255] = '\0'; // ensure null termination
+
+      strncpy(current->dir_name, next->dir_name, 255);
+      current->dir_name[255] = '\0'; // ensure null termination
+
+      strncpy(next->dir_name, temp_val, 255);
+      next->dir_name[255] = '\0'; // ensure null termination
+
+      swapped = 1; // a swap was made
+    }
+    current = current->next_dir;
+    next = current->next_dir;
+  }
+
+  if (swapped) { // only call sort_files again if a swap was made
+    return sort_dirs(list);
   } else {
     return list;
   }
@@ -99,11 +160,12 @@ void add_to_list(struct dirent *dir, DIR *d, listnode *current_file,
   }
 }
 
-dirnode *check_list(char *arg, dirnode *current_list, int show_hidden_files) {
+dirnode *check_list(char *directory_to_check, dirnode *current_list,
+                    int show_hidden_files) {
   DIR *d;
   struct dirent *dir;
-  d = opendir(arg);
-  strncpy(current_list->dir_name, arg, 255);
+  d = opendir(directory_to_check);
+  strncpy(current_list->dir_name, directory_to_check, 255);
   current_list->current_file = (listnode *)malloc(sizeof(listnode));
   listnode *head_file = current_list->current_file;
   listnode *current_file = head_file;
@@ -113,8 +175,8 @@ dirnode *check_list(char *arg, dirnode *current_list, int show_hidden_files) {
     closedir(d);
   }
 
-  sort_lists(head_file);
-  read_list(head_file);
+  sort_files(head_file);
+  read_files(head_file);
 
   return current_list;
 }
@@ -127,6 +189,8 @@ int main(int argc, char *argv[]) {
   dirnode *current;
   head = (dirnode *)malloc(sizeof(dirnode));
   current = head;
+  strncpy(current->dir_name, ".", 255);
+
   if (argc > 1) {
     int directory_traversed = 0;
     for (int i = 1; i < argc; i++) {
@@ -143,17 +207,29 @@ int main(int argc, char *argv[]) {
       if (argv[i][0] != '-') {
         dir_count++;
         if (dir_count > 1) {
+          current->next_dir = (dirnode *)malloc(sizeof(dirnode));
           current = current->next_dir;
+          strcat(current->dir_name, argv[i]);
+        } else {
+          current->dir_name[0] = '\0';
+          strcat(current->dir_name, argv[i]);
         }
-        current = check_list(argv[i], current, show_hidden_files);
-        directory_traversed = 1;
       }
     }
-    if (show_hidden_files && !directory_traversed) {
-      current = check_list(".", current, show_hidden_files);
+  }
+
+  sort_dirs(head);
+  int curr = 1;
+  while (head != NULL) {
+    if (dir_count > 1) {
+      if (curr > 1) {
+        printf("\n");
+      }
+      curr++;
+      printf("%s:\n", head->dir_name);
     }
-  } else {
-    current = check_list(".", current, show_hidden_files);
+    check_list(head->dir_name, head, show_hidden_files);
+    head = head->next_dir;
   }
 
   return (0);
