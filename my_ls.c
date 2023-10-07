@@ -61,10 +61,6 @@ listnode *sort_files(listnode *list) {
   return list;
 }
 
-int param_one_greater(char *param1, char *param2) {
-  return strcmp(param1, param2) < 0;
-}
-
 void *selection_sort_time(listnode *list) {
   listnode *current = list;
   struct stat file_stats_one;
@@ -101,57 +97,34 @@ void *selection_sort_time(listnode *list) {
   }
 }
 
-int is_sorted_dir(dirnode *param) {
-  dirnode *temp = param;
-  dirnode *next_temp = temp->next_dir;
-
-  while (temp->next_dir != NULL) {
-
-    if (strcmp(temp->dir_name, next_temp->dir_name) < 0) {
-      return 0;
-    }
-
-    temp = temp->next_dir;
-    if (temp->next_dir == NULL) {
-      return 1;
-    }
-    next_temp = temp->next_dir;
-  }
-  return 1;
-}
-
 dirnode *sort_dirs(dirnode *list) {
-  if (is_sorted_dir(list)) {
-    return list;
-  }
+  int swapped;
 
-  dirnode *current = list;
-  dirnode *next = list->next_dir;
-  int swapped = 0; // flag to check if any swaps were made
+  do {
+    swapped = 0;
+    dirnode *current = list;
+    dirnode *next = list->next_dir;
 
-  while (current->next_dir != NULL) {
-    if (strcmp(current->dir_name, next->dir_name) > 0) {
-      char temp_val[256];
-      strncpy(temp_val, current->dir_name, 255);
-      temp_val[255] = '\0'; // ensure null termination
+    while (current->next_dir != NULL) {
+      if (strcmp(current->dir_name, next->dir_name) > 0) {
+        char temp_val[256];
+        strncpy(temp_val, current->dir_name, 255);
+        temp_val[255] = '\0'; // ensure null termination
 
-      strncpy(current->dir_name, next->dir_name, 255);
-      current->dir_name[255] = '\0'; // ensure null termination
+        strncpy(current->dir_name, next->dir_name, 255);
+        current->dir_name[255] = '\0'; // ensure null termination
 
-      strncpy(next->dir_name, temp_val, 255);
-      next->dir_name[255] = '\0'; // ensure null termination
+        strncpy(next->dir_name, temp_val, 255);
+        next->dir_name[255] = '\0'; // ensure null termination
 
-      swapped = 1; // a swap was made
+        swapped = 1; // a swap was made
+      }
+      current = current->next_dir;
+      next = current->next_dir;
     }
-    current = current->next_dir;
-    next = current->next_dir;
-  }
+  } while (swapped);
 
-  if (swapped) { // only call sort_files again if a swap was made
-    return sort_dirs(list);
-  } else {
-    return list;
-  }
+  return list;
 }
 
 void add_to_list(struct dirent *dir, DIR *d, listnode *current_file,
