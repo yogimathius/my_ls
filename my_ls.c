@@ -7,11 +7,11 @@
 
 #ifndef STRUCT_LISTNODE
 #define STRUCT_LISTNODE
-typedef struct s_listnode {
+typedef struct s_filenode {
   char val[256];
   time_t st_mtim;
-  struct s_listnode *next;
-} listnode;
+  struct s_filenode *next;
+} filenode;
 #endif
 
 #ifndef STRUCT_DIRNODE
@@ -19,11 +19,11 @@ typedef struct s_listnode {
 typedef struct s_dirnode {
   char dir_name[256];
   struct s_dirnode *next_dir;
-  struct s_listnode *curr_file;
+  struct s_filenode *curr_file;
 } dirnode;
 #endif
 
-void read_files(listnode *list) {
+void read_files(filenode *list) {
   while (list != NULL) {
     if (strlen(list->val) > 0) {
       printf("%s\n", list->val);
@@ -32,13 +32,13 @@ void read_files(listnode *list) {
   }
 }
 
-listnode *sort_files(listnode *list) {
+filenode *sort_files(filenode *list) {
   int swapped;
 
   do {
     swapped = 0;
-    listnode *current = list;
-    listnode *next = list->next;
+    filenode *current = list;
+    filenode *next = list->next;
 
     while (current->next != NULL) {
       if (strcmp(current->val, next->val) > 0) {
@@ -61,18 +61,18 @@ listnode *sort_files(listnode *list) {
   return list;
 }
 
-void *selection_sort_time(listnode *list) {
-  listnode *current = list;
+void *selection_sort_time(filenode *list) {
+  filenode *current = list;
   struct stat file_stats_one;
   struct stat file_stats_two;
 
   while (current != NULL) {
     int result_one = stat(current->val, &file_stats_one);
 
-    listnode *min_node = current;
+    filenode *min_node = current;
     time_t min_time = file_stats_one.st_mtime;
 
-    for (listnode *iter = current->next; iter != NULL; iter = iter->next) {
+    for (filenode *iter = current->next; iter != NULL; iter = iter->next) {
       int iter_result = stat(iter->val, &file_stats_two);
 
       time_t iter_time = file_stats_two.st_mtime;
@@ -127,7 +127,7 @@ dirnode *sort_dirs(dirnode *list) {
   return list;
 }
 
-void add_to_list(struct dirent *dir, DIR *d, listnode *curr_file,
+void add_to_list(struct dirent *dir, DIR *d, filenode *curr_file,
                  int show_hidden) {
   while ((dir = readdir(d)) != NULL) {
     if (show_hidden || (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
@@ -138,7 +138,7 @@ void add_to_list(struct dirent *dir, DIR *d, listnode *curr_file,
       strncpy(curr_file->val, dir->d_name, 255);
       curr_file->st_mtim = iter_time;
 
-      curr_file->next = (listnode *)malloc(sizeof(listnode));
+      curr_file->next = (filenode *)malloc(sizeof(filenode));
       curr_file = curr_file->next;
       curr_file->val[0] = '\0';
       curr_file->next = NULL;
@@ -152,18 +152,19 @@ dirnode *check_list(char *dir_to_check, dirnode *curr_dir, int show_hidden,
   struct dirent *dir;
   d = opendir(dir_to_check);
   strncpy(curr_dir->dir_name, dir_to_check, 255);
-  curr_dir->curr_file = (listnode *)malloc(sizeof(listnode));
-  listnode *head_file = curr_dir->curr_file;
-  listnode *curr_file = head_file;
+  curr_dir->curr_file = (filenode *)malloc(sizeof(filenode));
+  filenode *head_file = curr_dir->curr_file;
+  filenode *curr_file = head_file;
 
   if (d) {
     add_to_list(dir, d, curr_file, show_hidden);
     closedir(d);
   }
-    sort_files(head_file);
 
   if (sort_time) {
     selection_sort_time(head_file);
+  } else {
+    sort_files(head_file);
   }
   read_files(head_file);
 
