@@ -141,8 +141,8 @@ void add_to_list(struct dirent *dir, DIR *d, filenode *next_file,
   }
 }
 
-dirnode *check_list(char *dir_to_check, dirnode *curr_dir, int show_hidden,
-                    int sort_time) {
+dirnode *check_list(dirnode *curr_dir, int show_hidden, int sort_time) {
+  char *dir_to_check = curr_dir->val;
   DIR *d;
   struct dirent *dir;
   d = opendir(dir_to_check);
@@ -213,7 +213,7 @@ int main(int argc, char *argv[]) {
       curr++;
       printf("%s:\n", head->val);
     }
-    check_list(head->val, head, show_hidden, sort_time);
+    check_list(head, show_hidden, sort_time);
     head = head->next;
   }
 
