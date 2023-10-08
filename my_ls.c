@@ -5,21 +5,22 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifndef STRUCT_LISTNODE
-#define STRUCT_LISTNODE
+#ifndef STRUCT_FILENODE
+#define STRUCT_FILENODE
 typedef struct s_filenode {
   char val[256];
   time_t st_mtim;
   struct s_filenode *next;
+  struct s_filenode *next_dir;
 } filenode;
 #endif
 
 #ifndef STRUCT_DIRNODE
 #define STRUCT_DIRNODE
 typedef struct s_dirnode {
-  char dir_name[256];
-  struct s_dirnode *next_dir;
-  struct s_filenode *curr_file;
+  char val[256];
+  struct s_dirnode *next;
+  struct s_filenode *next_file;
 } dirnode;
 #endif
 
@@ -32,6 +33,23 @@ void read_files(filenode *list) {
   }
 }
 
+int check_values(char *current_val, char *next_val) {
+  if (strcmp(current_val, next_val) > 0) {
+    char temp_val[256];
+    strncpy(temp_val, current_val, 255);
+    temp_val[255] = '\0';
+
+    strncpy(current_val, next_val, 255);
+    current_val[255] = '\0';
+
+    strncpy(next_val, temp_val, 255);
+    next_val[255] = '\0';
+
+    return 1;
+  }
+  return 0;
+}
+
 filenode *sort_files(filenode *list) {
   int swapped;
 
@@ -41,23 +59,30 @@ filenode *sort_files(filenode *list) {
     filenode *next = list->next;
 
     while (current->next != NULL) {
-      if (strcmp(current->val, next->val) > 0) {
-        char temp_val[256];
-        strncpy(temp_val, current->val, 255);
-        temp_val[255] = '\0';
+      swapped = check_values(current->val, next->val);
 
-        strncpy(current->val, next->val, 255);
-        current->val[255] = '\0';
-
-        strncpy(next->val, temp_val, 255);
-        next->val[255] = '\0';
-
-        swapped = 1;
-      }
       current = current->next;
       next = current->next;
     }
   } while (swapped);
+  return list;
+}
+
+dirnode *sort_dirs(dirnode *list) {
+  int swapped;
+
+  do {
+    swapped = 0;
+    dirnode *current = list;
+    dirnode *next = list->next;
+
+    while (current->next != NULL) {
+      swapped = check_values(current->val, next->val);
+      current = current->next;
+      next = current->next;
+    }
+  } while (swapped);
+
   return list;
 }
 
@@ -97,37 +122,7 @@ void *selection_sort_time(filenode *list) {
   }
 }
 
-dirnode *sort_dirs(dirnode *list) {
-  int swapped;
-
-  do {
-    swapped = 0;
-    dirnode *current = list;
-    dirnode *next = list->next_dir;
-
-    while (current->next_dir != NULL) {
-      if (strcmp(current->dir_name, next->dir_name) > 0) {
-        char temp_val[256];
-        strncpy(temp_val, current->dir_name, 255);
-        temp_val[255] = '\0';
-
-        strncpy(current->dir_name, next->dir_name, 255);
-        current->dir_name[255] = '\0';
-
-        strncpy(next->dir_name, temp_val, 255);
-        next->dir_name[255] = '\0';
-
-        swapped = 1;
-      }
-      current = current->next_dir;
-      next = current->next_dir;
-    }
-  } while (swapped);
-
-  return list;
-}
-
-void add_to_list(struct dirent *dir, DIR *d, filenode *curr_file,
+void add_to_list(struct dirent *dir, DIR *d, filenode *next_file,
                  int show_hidden) {
   while ((dir = readdir(d)) != NULL) {
     if (show_hidden || (dir->d_name[0] != '.' && dir->d_name[0] != ' ')) {
@@ -135,13 +130,13 @@ void add_to_list(struct dirent *dir, DIR *d, filenode *curr_file,
       int dir_stats = stat(dir->d_name, &file_stats_one);
       time_t iter_time = file_stats_one.st_mtime;
 
-      strncpy(curr_file->val, dir->d_name, 255);
-      curr_file->st_mtim = iter_time;
+      strncpy(next_file->val, dir->d_name, 255);
+      next_file->st_mtim = iter_time;
 
-      curr_file->next = (filenode *)malloc(sizeof(filenode));
-      curr_file = curr_file->next;
-      curr_file->val[0] = '\0';
-      curr_file->next = NULL;
+      next_file->next = (filenode *)malloc(sizeof(filenode));
+      next_file = next_file->next;
+      next_file->val[0] = '\0';
+      next_file->next = NULL;
     }
   }
 }
@@ -151,13 +146,13 @@ dirnode *check_list(char *dir_to_check, dirnode *curr_dir, int show_hidden,
   DIR *d;
   struct dirent *dir;
   d = opendir(dir_to_check);
-  strncpy(curr_dir->dir_name, dir_to_check, 255);
-  curr_dir->curr_file = (filenode *)malloc(sizeof(filenode));
-  filenode *head_file = curr_dir->curr_file;
-  filenode *curr_file = head_file;
+  strncpy(curr_dir->val, dir_to_check, 255);
+  curr_dir->next_file = (filenode *)malloc(sizeof(filenode));
+  filenode *head_file = curr_dir->next_file;
+  filenode *next_file = head_file;
 
   if (d) {
-    add_to_list(dir, d, curr_file, show_hidden);
+    add_to_list(dir, d, next_file, show_hidden);
     closedir(d);
   }
 
@@ -179,7 +174,7 @@ int main(int argc, char *argv[]) {
   dirnode *current;
   head = (dirnode *)malloc(sizeof(dirnode));
   current = head;
-  strncpy(current->dir_name, ".", 255);
+  strncpy(current->val, ".", 255);
 
   if (argc > 1) {
     int directory_traversed = 0;
@@ -197,12 +192,12 @@ int main(int argc, char *argv[]) {
       if (argv[i][0] != '-') {
         dir_count++;
         if (dir_count > 1) {
-          current->next_dir = (dirnode *)malloc(sizeof(dirnode));
-          current = current->next_dir;
-          strcat(current->dir_name, argv[i]);
+          current->next = (dirnode *)malloc(sizeof(dirnode));
+          current = current->next;
+          strcat(current->val, argv[i]);
         } else {
-          current->dir_name[0] = '\0';
-          strcat(current->dir_name, argv[i]);
+          current->val[0] = '\0';
+          strcat(current->val, argv[i]);
         }
       }
     }
@@ -216,10 +211,10 @@ int main(int argc, char *argv[]) {
         printf("\n");
       }
       curr++;
-      printf("%s:\n", head->dir_name);
+      printf("%s:\n", head->val);
     }
-    check_list(head->dir_name, head, show_hidden, sort_time);
-    head = head->next_dir;
+    check_list(head->val, head, show_hidden, sort_time);
+    head = head->next;
   }
 
   return (0);
