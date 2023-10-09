@@ -1,22 +1,5 @@
 #include "sort_header.h"
 
-int check_values(char *current_val, char *next_val) {
-  if (strcmp(current_val, next_val) > 0) {
-    char temp_val[256];
-    strncpy(temp_val, current_val, 255);
-    temp_val[255] = '\0';
-
-    strncpy(current_val, next_val, 255);
-    current_val[255] = '\0';
-
-    strncpy(next_val, temp_val, 255);
-    next_val[255] = '\0';
-
-    return 1;
-  }
-  return 0;
-}
-
 filenode *sort_files(filenode *list) {
   int swapped;
 
@@ -26,8 +9,19 @@ filenode *sort_files(filenode *list) {
     filenode *next = list->next;
 
     while (current->next != NULL) {
-      swapped = check_values(current->val, next->val);
+      if (strcmp(current->val, next->val) > 0) {
+        char temp_val[256];
+        strncpy(temp_val, current->val, 255);
+        temp_val[255] = '\0';
 
+        strncpy(current->val, next->val, 255);
+        current->val[255] = '\0';
+
+        strncpy(next->val, temp_val, 255);
+        next->val[255] = '\0';
+
+        swapped = 1;
+      }
       current = current->next;
       next = current->next;
     }
@@ -44,7 +38,19 @@ dirnode *sort_dirs(dirnode *list) {
     dirnode *next = list->next;
 
     while (current->next != NULL) {
-      swapped = check_values(current->val, next->val);
+      if (strcmp(current->val, next->val) > 0) {
+        char temp_val[256];
+        strncpy(temp_val, current->val, 255);
+        temp_val[255] = '\0';
+
+        strncpy(current->val, next->val, 255);
+        current->val[255] = '\0';
+
+        strncpy(next->val, temp_val, 255);
+        next->val[255] = '\0';
+
+        swapped = 1;
+      }
       current = current->next;
       next = current->next;
     }
