@@ -168,6 +168,41 @@ void add_to_list(struct dirent *dir, DIR *d, filenode *next_file,
   }
 }
 
+int is_batch_created(filenode *list) {
+  filenode *current = list;
+
+  int is_batch_created = 1;
+  for (filenode *iter = current->next; iter != NULL; iter = iter->next) {
+    if (strcmp(current->val, ".") != 0 && strcmp(current->val, "..") &&
+        strcmp(iter->val, ".") && strcmp(iter->val, "..")) {
+      if (current->st_mtim.tv_nsec != iter->st_mtim.tv_nsec ||
+          current->st_mtim.tv_sec != iter->st_mtim.tv_sec) {
+        is_batch_created = 0;
+      }
+    }
+  }
+  return is_batch_created;
+}
+
+void *reverse_linked_list(filenode *head) {
+  filenode *temp = head;
+  filenode *prev = NULL;
+  filenode *next = NULL;
+
+  while (temp != NULL) {
+      printf("iterating\n");
+    if (strcmp(prev->val, ".") != 0 && strcmp(prev->val, "..") &&
+        strcmp(next->val, ".") && strcmp(next->val, "..")) {
+      next = temp->next;
+      temp->next = prev;
+      prev = temp;
+      temp = next;
+    }
+  }
+//   head = prev;
+//   return head;
+}
+
 void *check_list(dirnode *curr_dir, int show_hidden, int sort_time) {
   char *dir_to_check = curr_dir->val;
   DIR *d;
@@ -184,10 +219,12 @@ void *check_list(dirnode *curr_dir, int show_hidden, int sort_time) {
   }
 
   if (sort_time) {
-    filenode *altered = head_file;
+    filenode *altered;
+    altered = head_file;
     int was_altered = selection_sort_time(altered);
-    if (was_altered) {
-      head_file = altered;
+    if (is_batch_created(altered)) {
+      printf("is batch created!!!!\n");
+      head_file = sort_files(altered);
     }
   } else {
     sort_files(head_file);
