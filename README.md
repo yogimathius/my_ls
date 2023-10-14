@@ -2,18 +2,18 @@
 ***
 
 ## Task
-TODO - What is the problem? And where is the challenge?
+Build my own ls program handling specific flags (-t, -ta, -a)
 
 ## Description
-TODO - How have you solved the problem?
+Used different sorting algos
 
 ## Installation
-TODO - How to install your project? npm install? make? make re?
+N/A
 
 ## Usage
-TODO - How does it work?
+
 ```
-./my_project argument1 argument2
+./my_ls -t/-ta/-a
 ```
 
 ### The Core Team
