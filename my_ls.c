@@ -28,16 +28,7 @@ typedef struct s_dirnode {
 void read_files(filenode *list, int sort_time) {
   while (list != NULL) {
     if (strlen(list->val) > 0) {
-    //   printf("%s\n", list->val);
-    //   if (sort_time) {
-    //   printf("%s\n", list->val);
-
-    //     printf("%lu\n", list->st_mtim.tv_nsec);
-    //     printf("%lu\n", list->st_mtim.tv_sec);
-    //   } else {
-                printf("%s\n", list->val);
-
-    //   }
+      printf("%s\n", list->val);
     }
     list = list->next;
   }
@@ -122,7 +113,6 @@ int selection_sort_time(filenode *list) {
           // if nanoseconds are greater
           (min_time.tv_sec == iter_time.tv_sec &&
            min_time.tv_nsec < iter_time.tv_nsec)) {
-            //    printf("nanoseconds greater\n");
         min_node = iter;
         min_time = iter_time;
         was_altered = 1;
@@ -130,14 +120,10 @@ int selection_sort_time(filenode *list) {
           // if both are equal and strings are not equal
           (min_time.tv_nsec == iter_time.tv_sec &&
            min_time.tv_nsec == iter_time.tv_nsec) {
-        // printf("times are equal\n");
         min_node = iter;
         min_time = iter_time;
         was_altered = 1;
-      } else {
-        //   printf("doesn't check out\n");
       }
-      // If time is equal, and
     }
 
     char temp_val[256];
@@ -197,26 +183,22 @@ filenode *reverse_linked_list(filenode *head) {
   filenode *next = NULL;
   filenode *first_dotfile = NULL;
   int show_dotfiles = 0;
-    if (strcmp(temp->val, ".") == 0) {
-        show_dotfiles = 1;
-            //   prev = temp;
-        first_dotfile = temp;
-        // temp = temp->next;
-        next = temp->next;
-    //   prev = temp;
-      temp = next;
-    }
+  if (strcmp(temp->val, ".") == 0) {
+    show_dotfiles = 1;
+    first_dotfile = temp;
+    next = temp->next;
+    temp = next;
+  }
   while (temp->next != NULL) {
- if (strcmp(temp->val, ".") != 0) {
+    if (strcmp(temp->val, ".") != 0) {
 
       next = temp->next;
       temp->next = prev;
       prev = temp;
       temp = next;
- }    //   printf("checks out %s\n", temp->val);
+    } 
   }
   if (show_dotfiles) {
-    //   printf("past while\n");
     first_dotfile->next = prev;
     head = first_dotfile;
   } else {
@@ -245,8 +227,6 @@ void *check_list(dirnode *curr_dir, int show_hidden, int sort_time) {
     altered = head_file;
     selection_sort_time(altered);
     if (is_batch_created(altered)) {
-    //   printf("is batch created!!!!\n");
-    //   head_file = sort_files(altered);
       head_file = reverse_linked_list(head_file);
     }
   } else {
@@ -308,12 +288,3 @@ int main(int argc, char *argv[]) {
 
   return (0);
 }
-
-// Can you run ./my_ls -t and it prints the content of the current directory
-// (sorted by time)?
-
-// Can you run ./my_ls -ta and it prints the content of the marvel directory
-// (sorted by time) + hidden files?
-
-// Can you run ./my_ls -t -a and it prints the content of the marvel directory
-// (sorted by time sec + nsec + alphanum ) + hidden files?
