@@ -13,7 +13,7 @@
 #define STRUCT_FILENODE
 typedef struct s_filenode {
   char val[256];
-  time_t st_mtim;
+  struct timespec st_mtim;
   struct s_filenode *next;
   struct s_filenode *next_dir;
 } filenode;
@@ -32,8 +32,8 @@ filenode *sort_files(filenode *list);
 
 dirnode *sort_dirs(dirnode *list);
 
-void *selection_sort_time(filenode *list);
+void selection_sort_time(filenode *list);
 
-dirnode *check_list(dirnode *curr_dir, int show_hidden, int sort_time);
+void *check_list(dirnode *curr_dir, int show_hidden, int sort_time);
 
 #endif /* SORT_HEADER_H */

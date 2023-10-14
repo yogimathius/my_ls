@@ -1,27 +1,35 @@
 #include "sort_header.h"
 
-void *selection_sort_time(filenode *list) {
+void selection_sort_time(filenode *list) {
   filenode *current = list;
   struct stat file_stats_one;
   struct stat file_stats_two;
-
   while (current != NULL) {
     stat(current->val, &file_stats_one);
 
     filenode *min_node = current;
-    time_t min_time = file_stats_one.st_mtime;
+    struct timespec min_time = min_node->st_mtim;
 
     for (filenode *iter = current->next; iter != NULL; iter = iter->next) {
       stat(iter->val, &file_stats_two);
 
-      time_t iter_time = file_stats_two.st_mtime;
-
-      if (iter_time < min_time ||
-          (min_time == iter_time && strcmp(min_node->val, iter->val) < 0)) {
+      struct timespec iter_time = file_stats_two.st_mtim;
+      // if seconds are greater
+      if (iter_time.tv_sec > min_time.tv_sec ||
+          // if nanoseconds are greater
+          (min_time.tv_sec == iter_time.tv_sec &&
+           min_time.tv_nsec < iter_time.tv_nsec)) {
+        min_node = iter;
+        min_time = iter_time;
+      } else if
+          // if both are equal and strings are not equal
+          (min_time.tv_nsec == iter_time.tv_sec &&
+           min_time.tv_nsec == iter_time.tv_nsec) {
         min_node = iter;
         min_time = iter_time;
       }
     }
+
     char temp_val[256];
     strncpy(temp_val, current->val, 255);
     temp_val[255] = '\0';
@@ -34,5 +42,4 @@ void *selection_sort_time(filenode *list) {
 
     current = current->next;
   }
-  return 0;
 }
